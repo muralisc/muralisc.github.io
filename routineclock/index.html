@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>routineclock</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --accent: #c8a96e;
+      --text: #e8e8e8;
+      --muted: #666;
+      --elapsed: #7eb89a;
+      --remaining: #7aaccc;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5rem;
+      padding: 2rem;
+    }
+
+    .clock {
+      font-size: clamp(3.5rem, 12vw, 8rem);
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .clock .seconds {
+      color: var(--muted);
+      font-size: 0.55em;
+    }
+
+    .stats {
+      display: flex;
+      gap: 3rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      font-size: clamp(1.6rem, 5vw, 2.8rem);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-value.elapsed  { color: var(--elapsed); }
+    .stat-value.remaining { color: var(--remaining); }
+
+    .divider {
+      width: 1px;
+      background: #2a2a2a;
+      align-self: stretch;
+    }
+
+    .quote-block {
+      max-width: 520px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .quote-text {
+      font-size: clamp(1rem, 3vw, 1.4rem);
+      font-family: Georgia, 'Times New Roman', serif;
+      font-style: italic;
+      color: var(--accent);
+      line-height: 1.6;
+    }
+
+    .quote-author {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .window-label {
+      font-size: 0.65rem;
+      color: #333;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="clock">
+    <span id="hhmm">--:--</span><span class="seconds">:<span id="ss">--</span></span>
+  </div>
+
+  <div id="work-stats" class="stats" style="display:none">
+    <div class="stat">
+      <span class="stat-label" id="label-elapsed">Since --:--</span>
+      <span class="stat-value elapsed" id="elapsed">--:--</span>
+    </div>
+    <div class="divider"></div>
+    <div class="stat">
+      <span class="stat-label" id="label-remaining">Until --:--</span>
+      <span class="stat-value remaining" id="remaining">--:--</span>
+    </div>
+  </div>
+
+  <div id="quote-block" class="quote-block" style="display:none">
+    <div class="quote-text" id="quote-text"></div>
+    <div class="quote-author" id="quote-author"></div>
+  </div>
+
+  <div class="window-label" id="window-label"></div>
+
+  <script>
+    const QUOTES = [
+      { text: "Rest is not idleness.", author: "John Lubbock" },
+      { text: "Almost everything will work again if you unplug it for a few minutes — including you.", author: "Anne Lamott" },
+      { text: "Time you enjoy wasting is not wasted time.", author: "Marthe Troly-Curtin" },
+      { text: "The time to relax is when you don't have time for it.", author: "Sydney J. Harris" },
+      { text: "Each person deserves a day away in which no problems are confronted.", author: "Maya Angelou" },
+      { text: "There is more to life than increasing its speed.", author: "Mahatma Gandhi" },
+      { text: "It is not enough to be busy. The question is: what are we busy about?", author: "Henry David Thoreau" },
+      { text: "Do not squander time, for that is the stuff life is made of.", author: "Benjamin Franklin" },
+      { text: "The present moment always will have been.", author: "Unknown" },
+      { text: "Wherever you are, be all there.", author: "Jim Elliot" },
+    ];
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function fmt(totalMinutes) {
+      const h = Math.floor(Math.abs(totalMinutes) / 60);
+      const m = Math.abs(totalMinutes) % 60;
+      return `${pad(h)}:${pad(m)}`;
+    }
+
+    // Parse "HHMM" or "HH:MM" → { h, m } — falls back to default on bad input
+    function parseTime(str, defaultH, defaultM) {
+      if (!str) return { h: defaultH, m: defaultM };
+      const clean = str.replace(':', '');
+      if (!/^\d{3,4}$/.test(clean)) return { h: defaultH, m: defaultM };
+      const padded = clean.padStart(4, '0');
+      const h = parseInt(padded.slice(0, 2), 10);
+      const m = parseInt(padded.slice(2, 4), 10);
+      if (h > 23 || m > 59) return { h: defaultH, m: defaultM };
+      return { h, m };
+    }
+
+    const params = new URLSearchParams(location.search);
+    const start  = parseTime(params.get('start'), 9,  30);
+    const end    = parseTime(params.get('end'),   18, 30);
+
+    const START_H = start.h, START_M = start.m;
+    const END_H   = end.h,   END_M   = end.m;
+
+    const startLabel = `${pad(START_H)}:${pad(START_M)}`;
+    const endLabel   = `${pad(END_H)}:${pad(END_M)}`;
+
+    document.getElementById('label-elapsed').textContent  = `Since ${startLabel}`;
+    document.getElementById('label-remaining').textContent = `Until ${endLabel}`;
+    document.getElementById('window-label').textContent   = `${startLabel} – ${endLabel}`;
+
+    let lastQuoteIdx = -1;
+    function pickQuote() {
+      let idx;
+      do { idx = Math.floor(Math.random() * QUOTES.length); } while (idx === lastQuoteIdx);
+      lastQuoteIdx = idx;
+      return QUOTES[idx];
+    }
+
+    let quoteRotateTimer = null;
+
+    function tick() {
+      const now = new Date();
+      const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+
+      document.getElementById('hhmm').textContent = `${pad(h)}:${pad(m)}`;
+      document.getElementById('ss').textContent   = pad(s);
+
+      const nowMins   = h * 60 + m;
+      const startMins = START_H * 60 + START_M;
+      const endMins   = END_H   * 60 + END_M;
+      const inWindow  = nowMins >= startMins && nowMins < endMins;
+
+      document.getElementById('work-stats').style.display  = inWindow ? 'flex'  : 'none';
+      document.getElementById('quote-block').style.display = inWindow ? 'none'  : 'flex';
+
+      if (inWindow) {
+        if (quoteRotateTimer) { clearInterval(quoteRotateTimer); quoteRotateTimer = null; }
+        document.getElementById('elapsed').textContent   = fmt(nowMins - startMins);
+        document.getElementById('remaining').textContent = fmt(endMins - nowMins);
+      } else {
+        if (!quoteRotateTimer) {
+          const q = pickQuote();
+          document.getElementById('quote-text').textContent   = `"${q.text}"`;
+          document.getElementById('quote-author').textContent = `— ${q.author}`;
+          quoteRotateTimer = setInterval(() => {
+            const q = pickQuote();
+            document.getElementById('quote-text').textContent   = `"${q.text}"`;
+            document.getElementById('quote-author').textContent = `— ${q.author}`;
+          }, 30_000);
+        }
+      }
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
