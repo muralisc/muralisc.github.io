@@ -210,9 +210,13 @@
 
       if (inWindow) {
         if (quoteRotateTimer) { clearInterval(quoteRotateTimer); quoteRotateTimer = null; }
-        document.getElementById('elapsed').textContent   = fmt(nowMins - startMins);
-        document.getElementById('remaining').textContent = fmt(endMins - nowMins);
+        const elapsedVal   = fmt(nowMins - startMins);
+        const remainingVal = fmt(endMins - nowMins);
+        document.getElementById('elapsed').textContent   = elapsedVal;
+        document.getElementById('remaining').textContent = remainingVal;
+        document.title = `+${elapsedVal} | -${remainingVal} | routineclock`;
       } else {
+        document.title = 'routineclock';
         if (!quoteRotateTimer) {
           const q = pickQuote();
           document.getElementById('quote-text').textContent   = `"${q.text}"`;
