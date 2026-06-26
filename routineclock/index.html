@@ -12,7 +12,7 @@
       --surface: #1a1a1a;
       --accent: #c8a96e;
       --text: #e8e8e8;
-      --muted: #666;
+      --muted: #999;
       --elapsed: #7eb89a;
       --remaining: #7aaccc;
     }
@@ -31,9 +31,8 @@
     }
 
     .clock {
-      font-size: clamp(3.5rem, 12vw, 8rem);
+      font-size: clamp(1.6rem, 5vw, 2.8rem);
       font-weight: 300;
-      font-family: Georgia, 'Times New Roman', serif;
       letter-spacing: 0.05em;
       color: var(--text);
       line-height: 1;
@@ -59,14 +58,14 @@
     }
 
     .stat-label {
-      font-size: 0.7rem;
+      font-size: 0.85rem;
       text-transform: uppercase;
       letter-spacing: 0.15em;
       color: var(--muted);
     }
 
     .stat-value {
-      font-size: clamp(1.6rem, 5vw, 2.8rem);
+      font-size: clamp(3.5rem, 12vw, 8rem);
       font-weight: 400;
       letter-spacing: 0.04em;
     }
@@ -90,22 +89,22 @@
 
     .quote-text {
       font-size: clamp(1rem, 3vw, 1.4rem);
-      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-family: Georgia, 'Times New Roman', serif;
       font-style: italic;
       color: var(--accent);
       line-height: 1.6;
     }
 
     .quote-author {
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       color: var(--muted);
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
 
     .window-label {
-      font-size: 0.65rem;
-      color: #333;
+      font-size: 0.75rem;
+      color: #888;
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
