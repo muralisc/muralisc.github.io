@@ -58,7 +58,7 @@
     }
 
     .stat-label {
-      font-size: 0.85rem;
+      font-size: 1.1rem;
       text-transform: uppercase;
       letter-spacing: 0.15em;
       color: var(--muted);
@@ -103,10 +103,17 @@
     }
 
     .window-label {
-      font-size: 0.75rem;
+      font-size: 1rem;
       color: #888;
       letter-spacing: 0.12em;
       text-transform: uppercase;
+    }
+
+    @media (max-width: 480px) {
+      body { gap: 1.5rem; padding: 1.5rem; }
+      .stats { flex-direction: column; gap: 1.5rem; }
+      .divider { width: auto; height: 1px; align-self: stretch; }
+      .quote-text { font-size: clamp(1.1rem, 4vw, 1.4rem); }
     }
   </style>
 </head>
